@@ -15,7 +15,7 @@ class App {
 
 		// Получаем контекст
 
-		this.context = this.canvas.getContext("webgl2")
+		this.context = this.canvas.getContext("webgl2", {alpha: false})
 
 		let gl = this.context
 
@@ -23,6 +23,7 @@ class App {
 
 		let vertexShader = gl.createShader(gl.VERTEX_SHADER)
 		gl.shaderSource(vertexShader, [
+
 			"#version 300 es",
 
 			"layout (location = 0) in vec3 vertexPosition;",
@@ -32,16 +33,15 @@ class App {
 			"uniform mat4 modelviewMatrix;",
 			"uniform mat4 projectionMatrix;",
 
-			"uniform struct {",
-				"vec3 position;",
-			"} light;",
-
 			"out vec4 fragNormal;",
+			"out vec4 fragPosition;",
 
 			"void main() {",
 				"fragNormal = modelviewMatrix * vec4(vertexNormal, 1);",
-				"gl_Position = projectionMatrix * modelviewMatrix * vec4(vertexPosition, 1);",
+				"fragPosition = modelviewMatrix * vec4(vertexPosition, 1);",
+				"gl_Position = projectionMatrix * fragPosition;",
 			"}"
+
 		].join("\n"))
 		gl.compileShader(vertexShader)
 		if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
@@ -50,17 +50,32 @@ class App {
 
 		let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
 		gl.shaderSource(fragmentShader, [
+
 			"#version 300 es",
+
 			"precision highp float;",
+
 			"in vec4 fragNormal;",
-			"out vec4 fragColor;",
+			"in vec4 fragPosition;",
+
+			"uniform struct {",
+				"vec4 position;",
+			"} light;",
+
+			"out vec4 color;",
+
 			"void main() {",
 
-				"vec4 n = normalize(fragNormal);",
+				"vec4 normal = normalize(fragNormal);",
+				"vec4 lightDirection = normalize(light.position - fragPosition);",
 
-				"fragColor = n;",
+				"float diffuse = dot(normal, lightDirection);",
+				"if (diffuse < 0.0) diffuse = 0.0;",
+
+				"color = vec4(1, 1, 1, 1) * diffuse;",
 
 			"}"
+
 		].join("\n"))
 		gl.compileShader(fragmentShader)
 		if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
@@ -91,12 +106,43 @@ class App {
 		let nf = near - far
 		let f = 1 / Math.tan(fovy / 2)
 
-		gl.uniformMatrix4fv(this.uniformLocation.projectionMatrix, false, new Float32Array([
-			f / aspect, 0, 0, 0,
-			0, f, 0, 0,
-			0, 0, (far + near) / nf, -1,
-			0, 0, (2 * far * near) / nf, 0
-		]))
+		let multMatrix = function(m0, m1) {
+			return new Float32Array([
+				m0[ 0] * m1[ 0] + m0[ 4] * m1[ 1] + m0[ 8] * m1[ 2] + m0[12] * m1[ 3],
+				m0[ 1] * m1[ 0] + m0[ 5] * m1[ 1] + m0[ 9] * m1[ 2] + m0[13] * m1[ 3],
+				m0[ 2] * m1[ 0] + m0[ 6] * m1[ 1] + m0[10] * m1[ 2] + m0[14] * m1[ 3],
+				m0[ 3] * m1[ 0] + m0[ 7] * m1[ 1] + m0[11] * m1[ 2] + m0[15] * m1[ 3],
+				m0[ 0] * m1[ 4] + m0[ 4] * m1[ 5] + m0[ 8] * m1[ 6] + m0[12] * m1[ 7],
+				m0[ 1] * m1[ 4] + m0[ 5] * m1[ 5] + m0[ 9] * m1[ 6] + m0[13] * m1[ 7],
+				m0[ 2] * m1[ 4] + m0[ 6] * m1[ 5] + m0[10] * m1[ 6] + m0[14] * m1[ 7],
+				m0[ 3] * m1[ 4] + m0[ 7] * m1[ 5] + m0[11] * m1[ 6] + m0[15] * m1[ 7],
+				m0[ 0] * m1[ 8] + m0[ 4] * m1[ 9] + m0[ 8] * m1[10] + m0[12] * m1[11],
+				m0[ 1] * m1[ 8] + m0[ 5] * m1[ 9] + m0[ 9] * m1[10] + m0[13] * m1[11],
+				m0[ 2] * m1[ 8] + m0[ 6] * m1[ 9] + m0[10] * m1[10] + m0[14] * m1[11],
+				m0[ 3] * m1[ 8] + m0[ 7] * m1[ 9] + m0[11] * m1[10] + m0[15] * m1[11],
+				m0[ 0] * m1[12] + m0[ 4] * m1[13] + m0[ 8] * m1[14] + m0[12] * m1[15],
+				m0[ 1] * m1[12] + m0[ 5] * m1[13] + m0[ 9] * m1[14] + m0[13] * m1[15],
+				m0[ 2] * m1[12] + m0[ 6] * m1[13] + m0[10] * m1[14] + m0[14] * m1[15],
+				m0[ 3] * m1[12] + m0[ 7] * m1[13] + m0[11] * m1[14] + m0[15] * m1[15]
+			])
+		}
+
+		gl.uniformMatrix4fv(this.uniformLocation.projectionMatrix, false, new Float32Array(multMatrix(
+			[
+				f / aspect, 0, 0, 0,
+				0, f, 0, 0,
+				0, 0, (far + near) / nf, -1,
+				0, 0, (2 * far * near) / nf, 0
+			],
+			[
+				1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				0, 0, -2, 1
+			]
+
+		)))
+
 
 		// Вершинный буфер
 
@@ -151,6 +197,10 @@ class App {
 
 		gl.enable(gl.DEPTH_TEST)
 
+		// Свет
+
+		gl.uniform4fv(gl.getUniformLocation(this.shaderProgram, "light.position"), new Float32Array([10, 10, 10, 1]))
+
 	}
 
 	/**
@@ -190,7 +240,7 @@ class App {
 			nx * nx * c1 + c, xy + zs, xz - ys, 0,
 			xy - zs, ny * ny * c1 + c, yz + xs, 0,
 			xz + ys, yz - xs, nz * nz * c1 + c, 0,
-			0, 0, -5, 1
+			0, 0, 0, 1
 		]))
 
 		// Рисуем меш
