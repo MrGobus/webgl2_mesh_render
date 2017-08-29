@@ -24,12 +24,22 @@ class App {
 		let vertexShader = gl.createShader(gl.VERTEX_SHADER)
 		gl.shaderSource(vertexShader, [
 			"#version 300 es",
+
 			"layout (location = 0) in vec3 vertexPosition;",
 			"layout (location = 1) in vec3 vertexNormal;",
 			"layout (location = 2) in vec2 vertexUV;",
+
 			"uniform mat4 modelviewMatrix;",
 			"uniform mat4 projectionMatrix;",
+
+			"uniform struct {",
+				"vec3 position;",
+			"} light;",
+
+			"out vec4 fragNormal;",
+
 			"void main() {",
+				"fragNormal = modelviewMatrix * vec4(vertexNormal, 1);",
 				"gl_Position = projectionMatrix * modelviewMatrix * vec4(vertexPosition, 1);",
 			"}"
 		].join("\n"))
@@ -42,9 +52,14 @@ class App {
 		gl.shaderSource(fragmentShader, [
 			"#version 300 es",
 			"precision highp float;",
+			"in vec4 fragNormal;",
 			"out vec4 fragColor;",
 			"void main() {",
-				"fragColor = vec4(1, 1, 1, 1);",
+
+				"vec4 n = normalize(fragNormal);",
+
+				"fragColor = fragNormal;",
+
 			"}"
 		].join("\n"))
 		gl.compileShader(fragmentShader)
@@ -131,6 +146,10 @@ class App {
 		this.indicesBuffer = gl.createBuffer()
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indicesBuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(meshJSON.indices), gl.STATIC_DRAW)
+
+		//
+
+		gl.enable(gl.DEPTH_TEST)
 
 	}
 

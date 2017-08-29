@@ -3,7 +3,7 @@ import bmesh
 import mathutils
 import os
 
-path = "d:/Project/blender_export/example/data/"
+path = "d:/Project/webgl2_mesh_render/data/"
 
 # Менять метами YZ
 swap_yz_state = True
