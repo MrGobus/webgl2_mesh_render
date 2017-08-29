@@ -58,7 +58,7 @@ class App {
 
 				"vec4 n = normalize(fragNormal);",
 
-				"fragColor = fragNormal;",
+				"fragColor = n;",
 
 			"}"
 		].join("\n"))
