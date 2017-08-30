@@ -138,11 +138,10 @@ class App {
 				1, 0, 0, 0,
 				0, 1, 0, 0,
 				0, 0, 1, 0,
-				0, 0, -2, 1
+				0, 0, -3, 1
 			]
 
 		)))
-
 
 		// Вершинный буфер
 
@@ -281,7 +280,7 @@ function loadJSON(url, callback) {
  */
 
 window.onload = function() {
-	loadJSON("./data/Monkey.json", function(meshJSON){
+	loadJSON("./data/mesh.json", function(meshJSON){
 		let app = new App(meshJSON)
 		document.body.appendChild(app.canvas)
 		app.play()

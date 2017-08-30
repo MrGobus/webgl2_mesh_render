@@ -62,7 +62,11 @@ for obj in bpy.data.objects:
                     vertex = loop.vert.co
 
                     # Нормали
-                    normal = loop.calc_normal()
+                    
+                    if loop.face.smooth:
+                        normal = loop.vert.normal
+                    else:
+                        normal = loop.face.normal
                     
                     # Текстурные координаты                    
                     if (bm.loops.layers.uv.active):
