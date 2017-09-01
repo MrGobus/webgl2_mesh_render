@@ -1,4 +1,5 @@
 # Рендер меша - WebGL2
+[Смотреть как работает](https://mrgobus.github.io/webgl2_mesh_render/)
 
 Загружает и рендерит меш используя WebGL2
 
